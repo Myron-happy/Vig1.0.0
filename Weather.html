@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vig - 天气</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #464646;
+            font-family: sans-serif;
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .weather-header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            position: relative; /* 为帮助按钮定位做准备 */
+        }
+        .weather-header h1 {
+            color: skyblue;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(135, 206, 235, 0.6);
+            letter-spacing: 2px;
+        }
+        
+        /* 帮助按钮和下拉菜单的容器 */
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* 城市下拉菜单样式 */
+        #citySelect {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(135, 206, 235, 0.5);
+            outline: none;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        #citySelect:hover { border-color: skyblue; box-shadow: 0 0 10px rgba(135, 206, 235, 0.4); }
+        #citySelect option { background: #333; color: #fff; }
+
+        /* 圆圈问号按钮样式 */
+        .help-btn {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(135, 206, 235, 0.5);
+            color: skyblue;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .help-btn:hover {
+            background: skyblue;
+            color: #464646;
+            box-shadow: 0 0 15px rgba(135, 206, 235, 0.8);
+            transform: scale(1.1);
+        }
+
+        .update-time { color: rgba(255, 255, 255, 0.4); font-size: 13px; margin-top: 8px; }
+        
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 40px;
+        }
+        .weather-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(135, 206, 235, 0.25);
+            border-radius: 16px;
+            padding: 20px 12px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        .weather-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(135, 206, 235, 0.6);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(135, 206, 235, 0.3);
+        }
+        .weather-card.today {
+            border-color: skyblue;
+            background: rgba(135, 206, 235, 0.12);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(135, 206, 235, 0.4);
+        }
+        .card-date { font-size: 14px; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px; }
+        .card-weekday { font-size: 12px; color: rgba(255, 255, 255, 0.4); margin-bottom: 12px; }
+        .card-icon { font-size: 40px; margin-bottom: 10px; line-height: 1; }
+        .card-desc { font-size: 14px; color: skyblue; margin-bottom: 12px; font-weight: bold; }
+        .card-temp { font-size: 20px; font-weight: bold; color: #ffffff; margin-bottom: 4px; }
+        .card-temp-max { color: #ff9f43; }
+        .card-temp-min { color: rgba(135, 206, 235, 0.8); font-size: 16px; }
+        .card-extra { font-size: 12px; color: rgba(255, 255, 255, 0.4); margin-top: 10px; line-height: 1.6; }
+        
+        .loading { text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 18px; padding: 60px 0; }
+        .error-msg { text-align: center; color: #ff6b6b; padding: 40px; font-size: 16px; display: none; }
+        .back-link { margin-top: 30px; margin-bottom: 30px; }
+        .back-link a {
+            color: skyblue; text-decoration: none; font-size: 16px;
+            padding: 10px 24px; border: 1px solid rgba(135, 206, 235, 0.4);
+            border-radius: 25px; transition: all 0.3s ease;
+        }
+        .back-link a:hover { background: rgba(135, 206, 235, 0.15); box-shadow: 0 0 15px rgba(135, 206, 235, 0.5); }
+
+        /* ================= 新增：弹窗样式 ================= */
+        .modal-overlay {
+            display: none; /* 默认隐藏 */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* 半透明黑色遮罩 */
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #333;
+            border: 1px solid skyblue;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(135, 206, 235, 0.4);
+            text-align: left;
+            position: relative;
+        }
+        .modal-content h3 {
+            color: skyblue;
+            margin-bottom: 15px;
+            font-size: 20px;
+            text-align: center;
+        }
+        .modal-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        .modal-content .close-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px 0;
+            background: skyblue;
+            color: #333;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-content .close-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 15px rgba(135, 206, 235, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 标题区域 -->
+    <div class="weather-header">
+        <h1>🌤 未来一周天气</h1>
+        <div class="header-controls">
+            <!-- 城市下拉菜单 -->
+            <select id="citySelect">
+                <option value="" disabled selected>📍 正在通过IP获取位置...</option>
+            </select>
+            <!-- 新增：圆圈问号按钮 -->
+            <div class="help-btn" id="helpBtn">?</div>
+        </div>
+        <div class="update-time" id="updateTime"></div>
+    </div>
+
+    <!-- 天气卡片容器 -->
+    <div class="weather-grid" id="weatherGrid">
+        <div class="loading" style="grid-column: 1 / -1;">加载天气数据中</div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- 返回首页 -->
+    <div class="back-link">
+        <a href="index.html">← 返回首页</a>
+    </div>
+
+    <!-- ================= 新增：帮助弹窗 ================= -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <h3>💡 天气页面使用指南</h3>
+            <p><strong>1. 怎么看天气？</strong><br>页面会自动获取你大概的位置，并显示未来 7 天的天气预报（最高温、最低温、降水量、风速）。</p>
+            <p><strong>2. 位置不准怎么办？</strong><br>如果你发现定位到了其他城市（比如VPN导致），点击上方的下拉框，手动选择你所在的城市即可。选择后天气会立刻更新。</p>
+            <p><strong>3. 数据会更新吗？</strong><br>会的，页面每隔 10 分钟会自动刷新一次最新天气。</p>
+            <p><strong>4. 怎么回到主页？</strong><br>点击页面最下方的“← 返回首页”按钮即可。</p>
+            <button class="close-btn" id="closeModalBtn">我知道了</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ============================================================
+        // 配置区域
+        // ============================================================
+        var REFRESH_INTERVAL = 10 * 60 * 1000; // 10分钟刷新一次
+        var currentLat = null;
+        var currentLon = null;
+
+        // 常用城市列表（你可以随意增删）
+        var CITY_LIST = [
+            { name: '北京', lat: 39.9042, lon: 116.4074 },
+            { name: '上海', lat: 31.2304, lon: 121.4737 },
+            { name: '广州', lat: 23.1291, lon: 113.2644 },
+            { name: '深圳', lat: 22.5431, lon: 114.0579 },
+            { name: '杭州', lat: 30.2741, lon: 120.1551 },
+            { name: '成都', lat: 30.5728, lon: 104.0668 },
+            { name: '武汉', lat: 30.5928, lon: 114.3055 },
+            { name: '西安', lat: 34.3416, lon: 108.9398 },
+            { name: '南京', lat: 32.0603, lon: 118.7969 },
+            { name: '重庆', lat: 29.5630, lon: 106.5516 }
+        ];
+
+        // ============================================================
+        // 天气代码映射表
+        // ============================================================
+        var WEATHER_CODES = {
+            0:  { desc: '晴',       icon: '☀️' }, 1:  { desc: '大部晴朗',  icon: '🌤️' },
+            2:  { desc: '局部多云',  icon: '⛅' }, 3:  { desc: '阴',       icon: '☁️' },
+            45: { desc: '雾',       icon: '🌫️' }, 48: { desc: '雾凇',     icon: '🌫️' },
+            51: { desc: '小毛毛雨',  icon: '🌦️' }, 53: { desc: '毛毛雨',   icon: '🌦️' },
+            55: { desc: '大毛毛雨',  icon: '🌧️' }, 56: { desc: '冻毛毛雨',  icon: '🌧️' },
+            57: { desc: '强冻毛毛雨', icon: '🌧️' }, 61: { desc: '小雨',     icon: '🌧️' },
+            63: { desc: '中雨',     icon: '🌧️' }, 65: { desc: '大雨',     icon: '🌧️' },
+            66: { desc: '冻雨',     icon: '🌧️' }, 67: { desc: '强冻雨',    icon: '🌧️' },
+            71: { desc: '小雪',     icon: '🌨️' }, 73: { desc: '中雪',     icon: '🌨️' },
+            75: { desc: '大雪',     icon: '❄️' }, 77: { desc: '雪粒',     icon: '❄️' },
+            80: { desc: '小阵雨',    icon: '🌦️' }, 81: { desc: '中阵雨',    icon: '🌧️' },
+            82: { desc: '大阵雨',    icon: '⛈️' }, 85: { desc: '小阵雪',    icon: '🌨️' },
+            86: { desc: '大阵雪',    icon: '❄️' }, 95: { desc: '雷暴',     icon: '⛈️' },
+            96: { desc: '雷暴伴小冰雹', icon: '⛈️' }, 99: { desc: '雷暴伴大冰雹', icon: '⛈️' }
+        };
+        var WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+        // ============================================================
+        // 工具函数
+        // ============================================================
+        function getWeatherInfo(code) { return WEATHER_CODES[code] || { desc: '未知', icon: '❓' }; }
+        function formatDate(dateStr) { var d = new Date(dateStr); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+        function getWeekday(dateStr) { var d = new Date(dateStr); return WEEKDAYS[d.getDay()]; }
+        function getTodayStr() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function formatUpdateTime() {
+            var d = new Date();
+            return '最后更新：' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+        }
+
+        // ============================================================
+        // 弹窗控制逻辑
+        // ============================================================
+        var helpModal = document.getElementById('helpModal');
+        var helpBtn = document.getElementById('helpBtn');
+        var closeModalBtn = document.getElementById('closeModalBtn');
+
+        // 点击问号，显示弹窗
+        helpBtn.addEventListener('click', function() {
+            helpModal.style.display = 'flex';
+        });
+
+        // 点击“我知道了”，隐藏弹窗
+        closeModalBtn.addEventListener('click', function() {
+            helpModal.style.display = 'none';
+        });
+
+        // 点击弹窗外的黑色遮罩，也可以关闭
+        helpModal.addEventListener('click', function(e) {
+            if (e.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+        });
+
+        // ============================================================
+        // 初始化下拉菜单 & 用户手动切换
+        // ============================================================
+        function initCitySelect() {
+            var select = document.getElementById('citySelect');
+            var html = '';
+            for (var i = 0; i < CITY_LIST.length; i++) {
+                html += '<option value="' + i + '">' + CITY_LIST[i].name + '</option>';
+            }
+            select.innerHTML = html;
+
+            select.addEventListener('change', function() {
+                var index = parseInt(this.value);
+                var city = CITY_LIST[index];
+                currentLat = city.lat;
+                currentLon = city.lon;
+                fetchWeather(currentLat, currentLon);
+            });
+        }
+
+        // ============================================================
+        // 渲染天气卡片
+        // ============================================================
+        function renderWeather(data) {
+            var daily = data.daily;
+            var grid = document.getElementById('weatherGrid');
+            var todayStr = getTodayStr();
+
+            var html = '';
+            for (var i = 0; i < daily.time.length; i++) {
+                var dateStr = daily.time[i];
+                var code = daily.weather_code[i];
+                var tempMax = Math.round(daily.temperature_2m_max[i]);
+                var tempMin = Math.round(daily.temperature_2m_min[i]);
+                var precip = daily.precipitation_sum ? daily.precipitation_sum[i] : 0;
+                var windMax = daily.wind_speed_10m_max ? Math.round(daily.wind_speed_10m_max[i]) : '--';
+                var info = getWeatherInfo(code);
+                var isToday = (dateStr === todayStr);
+
+                html += '<div class="weather-card' + (isToday ? ' today' : '') + '">';
+                html += '  <div class="card-date">' + formatDate(dateStr) + '</div>';
+                html += '  <div class="card-weekday">' + (isToday ? '今天' : getWeekday(dateStr)) + '</div>';
+                html += '  <div class="card-icon">' + info.icon + '</div>';
+                html += '  <div class="card-desc">' + info.desc + '</div>';
+                html += '  <div class="card-temp"><span class="card-temp-max">' + tempMax + '°</span><span class="card-temp-min"> / ' + tempMin + '°</span></div>';
+                html += '  <div class="card-extra">💧 ' + precip + 'mm<br>💨 ' + windMax + 'km/h</div>';
+                html += '</div>';
+            }
+            grid.innerHTML = html;
+            document.getElementById('updateTime').textContent = formatUpdateTime();
+        }
+
+        // ============================================================
+        // 获取天气数据
+        // ============================================================
+        function fetchWeather(lat, lon) {
+            var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+                '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=auto&forecast_days=7';
+
+            fetch(url)
+                .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+                .then(function(data) {
+                    if (data.error) throw new Error(data.reason || 'API 返回错误');
+                    renderWeather(data);
+                })
+                .catch(function(err) {
+                    console.error('天气获取失败:', err);
+                    document.getElementById('weatherGrid').innerHTML = '';
+                    var errorMsg = document.getElementById('errorMsg');
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = '⚠️ 天气数据加载失败，请检查网络后刷新页面。';
+                });
+        }
+
+        // ============================================================
+        // 初始化：IP定位（无弹窗）+ 自动纠正
+        // ============================================================
+        function init() {
+            initCitySelect(); // 1. 加载下拉菜单
+
+            // 2. 尝试通过 IP 获取大致位置（绝对没有弹窗）
+            fetch('https://ipapi.co/json/')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    // 如果 IP 定位飘到了国外，直接抛出错误，走降级逻辑
+                    if (data.country_code !== 'CN' && data.country_code !== 'HK' && data.country_code !== 'TW') {
+                        throw new Error('IP定位到了国外');
+                    }
+                    currentLat = data.latitude;
+                    currentLon = data.longitude;
+                    
+                    var cityName = data.city || '当前位置';
+                    // 尝试在下拉菜单中选中匹配的城市
+                    var matched = false;
+                    for (var i = 0; i < CITY_LIST.length; i++) {
+                        if (CITY_LIST[i].name.indexOf(cityName) !== -1 || cityName.indexOf(CITY_LIST[i].name) !== -1) {
+                            document.getElementById('citySelect').value = i;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        // 如果下拉菜单里没有这个城市，临时加进去
+                        var opt = document.createElement('option');
+                        opt.text = cityName;
+                        opt.value = CITY_LIST.length;
+                        document.getElementById('citySelect').add(opt);
+                        document.getElementById('citySelect').value = CITY_LIST.length;
+                        CITY_LIST.push({ name: cityName, lat: currentLat, lon: currentLon });
+                    }
+                    fetchWeather(currentLat, currentLon);
+                })
+                .catch(function(err) {
+                    // 3. 降级方案：如果 IP 定位失败或者飘到国外，默认使用上海
+                    console.warn('IP定位不可用，降级到默认城市:', err.message);
+                    currentLat = 31.2304;
+                    currentLon = 121.4737;
+                    document.getElementById('citySelect').value = 1; // 上海在列表索引为1
+                    fetchWeather(currentLat, currentLon);
+                });
+
+            // 4. 定时自动刷新
+            setInterval(function() {
+                if (currentLat !== null && currentLon !== null) {
+                    fetchWeather(currentLat, currentLon);
+                }
+            }, REFRESH_INTERVAL);
+        }
+
+        // 页面加载完成后启动
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+</body>
+</html>

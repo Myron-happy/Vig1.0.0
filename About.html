@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vig - 关于</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #464646; /* 与天气页面完全一致的深灰色背景 */
+            font-family: sans-serif;
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 标题样式 */
+        .about-title {
+            color: skyblue;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(135, 206, 235, 0.6);
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-align: center;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        /* 内容卡片 */
+        .about-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(135, 206, 235, 0.25);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(135, 206, 235, 0.1);
+            transition: all 0.4s ease;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* 卡片悬停特效 */
+        .about-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(135, 206, 235, 0.3);
+            border-color: rgba(135, 206, 235, 0.5);
+        }
+
+        /* 文本段落 */
+        .about-card p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            line-height: 2;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        /* 文本左侧的小圆点装饰 */
+        .about-card p::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 14px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: skyblue;
+            box-shadow: 0 0 8px skyblue;
+        }
+
+        /* 版本号高亮 */
+        .highlight-version {
+            color: skyblue;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 0 0 10px rgba(135, 206, 235, 0.6);
+        }
+
+        /* 制作不易的感谢语 */
+        .thanks-text {
+            color: #ff9f43;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 0;
+            padding-left: 0;
+            font-size: 17px;
+            text-shadow: 0 0 10px rgba(255, 159, 67, 0.4);
+        }
+        .thanks-text::before { display: none; } /* 去掉这行的圆点装饰 */
+
+        /* 返回首页按钮 */
+        .back-link {
+            margin-top: 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+        .back-link a {
+            color: skyblue;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 12px 30px;
+            border: 1px solid rgba(135, 206, 235, 0.4);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        .back-link a:hover {
+            background: rgba(135, 206, 235, 0.15);
+            box-shadow: 0 0 20px rgba(135, 206, 235, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* 页面入场动画 */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .about-title { font-size: 26px; }
+            .about-card { padding: 25px 20px; }
+            .about-card p { font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="about-title">✨ 关于 Vig网站</h1>
+
+    <div class="about-card">
+        <p>欢迎来到 <span class="highlight-version">Vig官方网站 1.0.0 正式版</span>！</p>
+        <p>这个页面的功能虽然很少，但是做得非常精细，并且加入了很多流畅的视觉特效，希望能给你带来舒适的浏览体验。</p>
+        <p>天气页面调用了 <strong>Open-Meteo</strong> 平台，可以实时获取并自动刷新未来一周的天气数据。</p>
+        <p>为了做好天气和网站的各种细节，天气代码足足写了 400 多行，每一个特效都经过了反复的调试。</p>
+        <p class="thanks-text">制作不易，谢谢大家的支持！❤️</p>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← 返回首页</a>
+    </div>
+
+</body>
+</html>
